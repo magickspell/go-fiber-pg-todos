@@ -1,8 +1,10 @@
 package tasks
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	entities "todo-go-fiber/internal/db/entities"
 )
@@ -21,12 +23,15 @@ func SelectTask(conn *sql.DB, id int64) ([]entities.Task, error) {
 		query = query + " WHERE id = " + fmt.Sprint(id)
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
+
 	tran, err := conn.Begin()
 	if err != nil {
 		return nil, fmt.Errorf("cant start transaction: '%v'", err)
 	}
 
-	rows, err := tran.Query(query)
+	rows, err := tran.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -61,12 +66,15 @@ func SelectTask(conn *sql.DB, id int64) ([]entities.Task, error) {
 }
 
 func taskTransaction(db *sql.DB, query string, pi *int64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
+
 	tran, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("cant start transaction: '%w'", err)
 	}
 
-	err = tran.QueryRow(query).Scan(pi)
+	err = tran.QueryRowContext(ctx, query).Scan(pi)
 	if err != nil {
 		return fmt.Errorf("unable to QueryRow or Scan: '%w'", err)
 	}
