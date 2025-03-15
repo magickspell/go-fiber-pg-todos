@@ -4,13 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 
-	db "todo-go-fiber/internal/db"
-
 	entities "todo-go-fiber/internal/db/entities"
 )
 
 func UpdateTask(conn *sql.DB, query string, pi *int64) error {
-	err := db.TaskTransaction(conn, query, pi)
+	err := taskTransaction(conn, query, pi)
 	if err != nil {
 		return err
 	}
@@ -60,4 +58,23 @@ func SelectTask(conn *sql.DB, id int64) ([]entities.Task, error) {
 	}
 
 	return tasks, nil
+}
+
+func taskTransaction(db *sql.DB, query string, pi *int64) error {
+	tran, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("cant start transaction: '%w'", err)
+	}
+
+	err = tran.QueryRow(query).Scan(pi)
+	if err != nil {
+		return fmt.Errorf("unable to QueryRow or Scan: '%w'", err)
+	}
+
+	err = tran.Commit()
+	if err != nil {
+		return fmt.Errorf("unable to commit: '%w'", err)
+	}
+
+	return nil
 }

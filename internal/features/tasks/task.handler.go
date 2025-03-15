@@ -6,23 +6,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// todo
-/*
-новые запросы в горутинах?
-валидаторы
-миграции
-тразакции
-документация
-грейсфулшотдаун
-докер
-горм?
-демка скрин
-vendor
-air
-*/
-
-type TaskhandlerI interface {
+type TaskHandlerI interface {
 	CreateTask(ctx *fiber.Ctx) error
+	ReadTask(ctx *fiber.Ctx) error
+	UpdateTask(ctx *fiber.Ctx) error
+	DeleteTask(ctx *fiber.Ctx) error
 }
 
 type TaskHandler struct {
@@ -30,37 +18,29 @@ type TaskHandler struct {
 }
 
 func (h *TaskHandler) CreateTask(ctx *fiber.Ctx) error {
-	id, err := CreateTask(ctx, h.DB)
-	if err != nil {
-		return ctx.Status(500).JSON(fiber.Map{"message": "error", "err": err.Error()})
-	}
-
-	return ctx.Status(200).JSON(fiber.Map{"message": "success", "id": id})
+	taskId, err := CreateTask(ctx, h.DB)
+	return handleResponse(ctx, taskId, err)
 }
 
 func (h *TaskHandler) ReadTask(ctx *fiber.Ctx) error {
 	tasks, err := GetTask(ctx, h.DB)
-	if err != nil {
-		return ctx.Status(500).JSON(fiber.Map{"message": "error", "err": err.Error()})
-	}
-
-	return ctx.Status(200).JSON(fiber.Map{"message": "success", "tasks": tasks})
+	return handleResponse(ctx, tasks, err)
 }
 
 func (h *TaskHandler) UpdateTask(ctx *fiber.Ctx) error {
 	taskId, err := PutTask(ctx, h.DB)
-	if err != nil {
-		return ctx.Status(500).JSON(fiber.Map{"message": "error", "err": err.Error()})
-	}
-
-	return ctx.Status(200).JSON(fiber.Map{"message": "success", "id": taskId})
+	return handleResponse(ctx, taskId, err)
 }
 
 func (h *TaskHandler) DeleteTask(ctx *fiber.Ctx) error {
 	taskId, err := DeleteTask(ctx, h.DB)
+	return handleResponse(ctx, taskId, err)
+}
+
+func handleResponse(ctx *fiber.Ctx, result any, err error) error {
 	if err != nil {
 		return ctx.Status(500).JSON(fiber.Map{"message": "error", "err": err.Error()})
 	}
 
-	return ctx.Status(200).JSON(fiber.Map{"message": "success", "id": taskId})
+	return ctx.Status(200).JSON(fiber.Map{"message": "success", "result": result})
 }

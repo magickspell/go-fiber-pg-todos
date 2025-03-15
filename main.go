@@ -2,6 +2,10 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -17,20 +21,27 @@ import (
 )
 
 func main() {
-	app := fiber.New()
-	app.Use(recover.New())
+	app := fiber.New(fiber.Config{
+		StrictRouting: true,
+	})
 	app.Use(middlewares.JsonMiddleware)
+	app.Use(recover.New())
 
 	config := config.GetConfig()
 
 	conn := db.Connect(config)
 	defer conn.Close()
-	migrations.Migrate(conn)
+	migrations.RunMigrations(conn)
 
 	taskHandler := &tasks.TaskHandler{DB: conn}
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return fiber.NewError(782, "Custom error message")
+	app.Get("/panic", func(c *fiber.Ctx) error {
+		panic("panic")
+	})
+
+	app.Get("/long", func(c *fiber.Ctx) error {
+		time.Sleep(5 * time.Second)
+		return fiber.NewError(500, "request overtime passed wrong")
 	})
 
 	app.Post("/tasks", func(c *fiber.Ctx) error {
@@ -49,5 +60,19 @@ func main() {
 		return taskHandler.DeleteTask(c)
 	})
 
-	log.Fatal(app.Listen(":3000"))
+	go func() {
+		if err := app.Listen(":3000"); err != nil {
+			log.Panic(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	<-c
+	log.Println("Gracefully shutting down...")
+	_ = app.Shutdown()
+
+	log.Println("Running cleanup tasks...")
+	conn.Close()
+	log.Println("Fiber was successful shutdown.")
 }

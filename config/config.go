@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"reflect"
 )
@@ -17,17 +17,15 @@ func GetConfig() *Config {
 		DbURL: os.Getenv("GO_DB_URL"),
 	}
 
-	// logger.OuteputLog(logg.LogPayload{Info: "start parsing config"})
-	fmt.Println("start parsing config")
+	log.Println("start parsing config")
 	keys := reflect.TypeOf(*cfg)
 	values := reflect.ValueOf(*cfg)
 	for i := 0; i < keys.NumField(); i++ {
 		key := keys.Field(i)
 		value := values.Field(i)
-		fmt.Printf("config item: [%v] = %v (length = %v)\n", key.Name, value, value.Len())
+		log.Printf("config item: [%v] = %v (length = %v)\n", key.Name, value, value.Len())
 		if value.Len() == 0 {
-			// logger.OuteputLog(logg.LogPayload{Error: fmt.Errorf("env has empty value")})
-			fmt.Println("env has empty value")
+			log.Println("env has empty value")
 		}
 	}
 

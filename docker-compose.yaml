@@ -1,6 +1,7 @@
 services:
 
   todo-go-postgres:
+    container_name: db
     image: postgres:17.2-alpine3.21
     ports:
       - 6432:5432

@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 
 	entities "todo-go-fiber/internal/db/entities"
 
@@ -19,25 +17,13 @@ func CreateTask(c *fiber.Ctx, conn *sql.DB) (int64, error) {
 		return 0, fmt.Errorf("cannot parse request body: %v", err)
 	}
 
-	// todo Валидация
 	var id int64
-	queryStr := []string{"INSERT INTO tasks (\n", "", "\n)\nVALUES (", "", ")\nRETURNING id;"}
-	if len(task.Title) != 0 {
-		queryStr[1] = queryStr[1] + "title"
-		queryStr[3] = queryStr[3] + fmt.Sprintf("'%v'", task.Title)
-	}
-	if task.Description != nil && len(*task.Description) > 0 {
-		if len(queryStr[1]) > 0 {
-			queryStr[1] = queryStr[1] + ", "
-		}
-		if len(queryStr[3]) > 0 {
-			queryStr[3] = queryStr[3] + ", "
-		}
-		queryStr[1] = queryStr[1] + "description"
-		queryStr[3] = queryStr[3] + fmt.Sprintf("'%v'", *task.Description)
+	queryStr, err := getCreateTaskQuery(&task)
+	if err != nil {
+		return 0, err
 	}
 
-	err = UpdateTask(conn, strings.Join(queryStr, " "), &id)
+	err = UpdateTask(conn, queryStr, &id)
 	if err != nil {
 		return 0, err
 	}
@@ -49,8 +35,8 @@ func GetTask(c *fiber.Ctx, conn *sql.DB) ([]entities.Task, error) {
 	queryId := c.Query("id")
 
 	var id int64 = 0
-	if len(queryId) > 0 { // todo func
-		idInt, err := strconv.Atoi(queryId)
+	if len(queryId) > 0 {
+		idInt, err := validateId(queryId)
 		if err != nil {
 			return []entities.Task{}, err
 		}
@@ -66,52 +52,24 @@ func GetTask(c *fiber.Ctx, conn *sql.DB) ([]entities.Task, error) {
 }
 
 func PutTask(c *fiber.Ctx, conn *sql.DB) (int64, error) {
-	pId := c.Params("id")
-	if pId == "" {
-		return 0, fmt.Errorf("id was not provided")
-	}
-	var idInt int64 = 0
-	if len(pId) > 0 { // todo func
-		id, err := strconv.Atoi(pId)
-		if err != nil {
-			return 0, err
-		}
-		idInt = int64(id)
+	idInt, err := validateId(c.Params("id"))
+	if err != nil {
+		return 0, err
 	}
 
 	var task entities.Task
-	err := c.BodyParser(&task)
+	err = c.BodyParser(&task)
 	if err != nil {
 		return 0, fmt.Errorf("cannot parse request body: %v", err)
 	}
 
-	paramsCount := 0
-	var id int64 = 0
-	queryStr := "UPDATE tasks set "
-	if len(task.Title) != 0 {
-		queryStr = queryStr + fmt.Sprintf("title = '%v'", task.Title)
-		paramsCount++
+	query, err := getUpdateTaskQuery(&task, idInt)
+	if err != nil {
+		return 0, err
 	}
-	if task.Description != nil && len(*task.Description) > 0 {
-		if paramsCount > 0 {
-			queryStr = queryStr + ", "
-		}
-		queryStr = queryStr + fmt.Sprintf("description = '%v'", *task.Description)
-		paramsCount++
-	}
-	if len(task.Status) != 0 {
-		if paramsCount > 0 {
-			queryStr = queryStr + ", "
-		}
-		queryStr = queryStr + fmt.Sprintf("status = '%v'", task.Status)
-		paramsCount++
-	}
-	if paramsCount == 0 {
-		return 0, fmt.Errorf("params was not provided")
-	}
-	queryStr = queryStr + fmt.Sprintf(",updated_at = now()\nwhere id = '%v'\nRETURNING id;", idInt)
 
-	err = UpdateTask(conn, queryStr, &id)
+	var id int64 = 0
+	err = UpdateTask(conn, query, &id)
 	if err != nil {
 		return 0, err
 	}
@@ -120,24 +78,14 @@ func PutTask(c *fiber.Ctx, conn *sql.DB) (int64, error) {
 }
 
 func DeleteTask(c *fiber.Ctx, conn *sql.DB) (int64, error) {
-	pId := c.Params("id")
-	if pId == "" {
-		return 0, fmt.Errorf("id was not provided")
-	}
-
-	var id int64 = 0
-
-	var idInt int64 = 0
-	if len(pId) > 0 { // todo func
-		id, err := strconv.Atoi(pId)
-		if err != nil {
-			return 0, err
-		}
-		idInt = int64(id)
+	idInt, err := validateId(c.Params("id"))
+	if err != nil {
+		return 0, err
 	}
 	queryStr := fmt.Sprintf("DELETE FROM tasks where id = %v RETURNING id;", idInt)
 
-	err := UpdateTask(conn, queryStr, &id)
+	var id int64 = 0
+	err = UpdateTask(conn, queryStr, &id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, nil

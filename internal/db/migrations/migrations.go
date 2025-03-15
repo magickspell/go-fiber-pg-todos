@@ -2,25 +2,21 @@ package migrations
 
 import (
 	"database/sql"
+	"log"
 
-	_ "github.com/jackc/pgx/v5"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose"
 )
 
-const createTasksTable = `
-CREATE TYPE task_status AS ENUM ('new', 'in_progress', 'done');
+func RunMigrations(dbconn *sql.DB) {
+	log.Println("transaction started")
 
-CREATE TABLE IF NOT EXISTS tasks (
-    id SERIAL PRIMARY KEY,
-    title TEXT NOT NULL,
-    description TEXT,
-    status task_status DEFAULT 'new',
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
-);
-`
+	if err := goose.SetDialect("postgres"); err != nil {
+		log.Println(err)
+	}
 
-func Migrate(conn *sql.DB) error {
-	_, err := conn.Exec(createTasksTable)
-	return err
+	if err := goose.Up(dbconn, "internal/db/migrations/sql"); err != nil {
+		log.Println(err)
+	}
+
+	log.Println("transaction passed")
 }
