@@ -10,11 +10,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 
-	config "todo-go-fiber/config"
 	db "todo-go-fiber/internal/db"
 	migrations "todo-go-fiber/internal/db/migrations"
 	tasks "todo-go-fiber/internal/features/tasks"
 	middlewares "todo-go-fiber/internal/middlewars"
+	config "todo-go-fiber/pkg/config"
 
 	_ "github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"

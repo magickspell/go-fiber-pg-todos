@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	config "todo-go-fiber/config"
+	config "todo-go-fiber/pkg/config"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
