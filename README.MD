@@ -26,9 +26,10 @@ make reset
 #### Accessing Adminer
 To quickly connect to the PostgreSQL database, use Adminer:
 1) ##### **URL**: [http://localhost:8081](http://localhost:8081)  
-2) ##### **Database**: `db`  
+2) ##### **Host**: `db`  
 3) ##### **User**: `postgres`  
 4) ##### **Password**: `postgres`
+5) ##### **DB**: `tasks`
 
 #### Tests
 1) Integrations (modules) use postman json `file`
