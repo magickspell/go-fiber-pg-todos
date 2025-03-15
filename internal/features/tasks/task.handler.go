@@ -8,6 +8,7 @@ import (
 
 // todo
 /*
+новые запросы в горутинах?
 валидаторы
 миграции
 тразакции
@@ -19,6 +20,10 @@ import (
 vendor
 air
 */
+
+type TaskhandlerI interface {
+	CreateTask(ctx *fiber.Ctx) error
+}
 
 type TaskHandler struct {
 	DB *sql.DB
@@ -42,11 +47,20 @@ func (h *TaskHandler) ReadTask(ctx *fiber.Ctx) error {
 	return ctx.Status(200).JSON(fiber.Map{"message": "success", "tasks": tasks})
 }
 
-func (h *TaskHandler) UpdateTask(c *fiber.Ctx) error {
-	// id := c.Params("id")
-	return nil
+func (h *TaskHandler) UpdateTask(ctx *fiber.Ctx) error {
+	taskId, err := PutTask(ctx, h.DB)
+	if err != nil {
+		return ctx.Status(500).JSON(fiber.Map{"message": "error", "err": err.Error()})
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{"message": "success", "id": taskId})
 }
 
-func (h *TaskHandler) DeleteTask(c *fiber.Ctx) error {
-	return nil
+func (h *TaskHandler) DeleteTask(ctx *fiber.Ctx) error {
+	taskId, err := DeleteTask(ctx, h.DB)
+	if err != nil {
+		return ctx.Status(500).JSON(fiber.Map{"message": "error", "err": err.Error()})
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{"message": "success", "id": taskId})
 }

@@ -9,8 +9,8 @@ import (
 	entities "todo-go-fiber/internal/db/entities"
 )
 
-func InsertTask(conn *sql.DB, query string, pi *int64) error {
-	err := db.InsertTr(conn, query, pi)
+func UpdateTask(conn *sql.DB, query string, pi *int64) error {
+	err := db.TaskTransaction(conn, query, pi)
 	if err != nil {
 		return err
 	}
@@ -23,7 +23,12 @@ func SelectTask(conn *sql.DB, id int64) ([]entities.Task, error) {
 		query = query + " WHERE id = " + fmt.Sprint(id)
 	}
 
-	rows, err := conn.Query(query)
+	tran, err := conn.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("cant start transaction: '%v'", err)
+	}
+
+	rows, err := tran.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -49,13 +54,10 @@ func SelectTask(conn *sql.DB, id int64) ([]entities.Task, error) {
 		return nil, err
 	}
 
+	err = tran.Commit()
+	if err != nil {
+		return nil, fmt.Errorf("unable to commit: '%v'", err)
+	}
+
 	return tasks, nil
-}
-
-func UpsertTask() {
-
-}
-
-func DeleteTask() {
-
 }

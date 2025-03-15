@@ -42,11 +42,11 @@ func main() {
 	})
 
 	app.Put("/tasks/:id", func(c *fiber.Ctx) error {
-		return nil
+		return taskHandler.UpdateTask(c)
 	})
 
 	app.Delete("/tasks/:id", func(c *fiber.Ctx) error {
-		return nil
+		return taskHandler.DeleteTask(c)
 	})
 
 	log.Fatal(app.Listen(":3000"))
